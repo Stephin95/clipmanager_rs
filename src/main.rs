@@ -26,10 +26,8 @@ fn main() {
     pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("./migrations/");
     let args = Args::parse();
     let mut conn = clip_db::establish_connection();
-    let migration_result=conn.run_pending_migrations(MIGRATIONS).unwrap();
-    print!("migration result:-{:?}",migration_result);
-    // embedded_migrations::run(&conn);
-    // run_migration(&mut conn, migrations);
+    conn.run_pending_migrations(MIGRATIONS).unwrap();
+
     if args.store {
         // save_copied_val(& conn)
         save_copied_val(&mut conn,MIGRATIONS)
@@ -59,7 +57,7 @@ fn save_copied_val(conn: &mut SqliteConnection,MIGRATIONS:EmbeddedMigrations) {
         .read_to_end(&mut bytes)
         .expect("No arguments supplied");
     let clipboard_entry = String::from_utf8(bytes).expect("Error converting copied value to utf8");
-    // println!("{}", clipboard_entry);
+
     remove_duplicates(conn, &clipboard_entry);
     match write_to_db(conn, &clipboard_entry) {
         Ok(result) => {
@@ -67,7 +65,7 @@ fn save_copied_val(conn: &mut SqliteConnection,MIGRATIONS:EmbeddedMigrations) {
         }
         Err(error_val) => {
             println!("{:?}", error_val);
-            // insert_default_values(conn).unwrap();
+
             if let Err(_error)=write_to_db(conn, &clipboard_entry){
                 conn.run_pending_migrations(MIGRATIONS).unwrap();
                 write_to_db(conn, &clipboard_entry).expect("Error Occured even after creating a table with default values");
@@ -79,3 +77,4 @@ fn save_copied_val(conn: &mut SqliteConnection,MIGRATIONS:EmbeddedMigrations) {
 fn show_gui(cliphist_vec: Vec<ClipboardEntry>) {
     iced_gui::show(cliphist_vec).unwrap();
 }
+

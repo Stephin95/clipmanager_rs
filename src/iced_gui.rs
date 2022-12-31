@@ -1,5 +1,4 @@
-// use diesel::Connection;
-// use diesel::SqliteConnection;
+
 use iced::executor;
 use iced::widget::scrollable;
 use iced::widget::Button;
@@ -8,10 +7,9 @@ use iced::Application;
 use iced::Theme;
 use iced::{Alignment, Command, Element, Settings};
 use std::ops::{Bound, RangeBounds};
-// use std::cell::RefCell;
+
 use crate::clip_db::ClipboardEntry;
-// use iced::widget::Column;
-// use std::ops::{Bound, RangeBounds};
+
 
 trait StringUtils {
     fn substring(&self, start: usize, len: usize) -> &str;
@@ -84,10 +82,7 @@ fn format_button_text(clipboard_entry: &Vec<ClipboardEntry>) -> Vec<ClipboardEnt
 }
 
 pub fn show<'a>(cliphist: Vec<ClipboardEntry>) -> iced::Result {
-    // Counter::run(Settings::default())
-    // let mut clipboard_manager=ClipboardManager{
-    //     cliphist,
-    // };
+
 
     ClipboardManager::run(Settings {
         window: iced::window::Settings {
@@ -147,9 +142,7 @@ impl Application for ClipboardManager {
 
                     }
                 }
-                // let copied_text = self.cliphist[copied].clone();
-                // set_clipboard(&self.cliphist.clip_text);
-                // self.cliphist = get_clip_hist();
+
             }
         };
         Command::none()

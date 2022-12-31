@@ -1,12 +1,9 @@
 mod schema;
 use diesel::{insert_into, prelude::*};
-// use diesel::sqlite::Sqlite;
 use clipboard_entries::dsl::*;
-
 use schema::clipboard_entries;
-
 #[derive(Queryable, PartialEq, Debug)]
-// #[diesel(table_name = clipboard_entries)]
+
 pub struct ClipboardEntry {
     pub id: i32,
     pub clip_text: String,
@@ -27,7 +24,7 @@ pub fn establish_connection() -> SqliteConnection {
 }
 
 pub fn retrieve_clipboard_history(connection: &mut SqliteConnection) -> Vec<ClipboardEntry> {
-    // let connection = &mut establish_connection();
+
     let results = clipboard_entries
         // .filter(published.eq(true))
         .limit(200)
