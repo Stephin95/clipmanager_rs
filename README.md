@@ -23,6 +23,6 @@ Clicking older entries will add it to the clipboard
 
 ---
 
-Not Production ready. Only for educational purpose
+**Not Production ready. Only for educational purpose**
 
 
