@@ -16,6 +16,8 @@ struct Args {
     list: bool,
     #[arg(short, long)]
     gui: bool,
+    #[arg(short, long)]
+    clear: bool,
 }
 
 fn print_type_of<T>(_: &T) {
@@ -37,7 +39,11 @@ fn main() {
     } else if args.gui {
         let clip_hist_iter = retrieve_clipboard_history(&mut conn);
         show_gui(clip_hist_iter)
-    } else {
+    }
+    else if args.clear {
+        revert_migrations(&mut conn, MIGRATIONS)
+    }
+    else {
         println!("Invalid Arguments Supplied")
     }
 }
@@ -78,3 +84,6 @@ fn show_gui(cliphist_vec: Vec<ClipboardEntry>) {
     iced_gui::show(cliphist_vec).unwrap();
 }
 
+fn revert_migrations(conn:&mut SqliteConnection, migrations:EmbeddedMigrations){
+    conn.revert_last_migration(migrations).expect("Error reverting changes to the database");
+}
