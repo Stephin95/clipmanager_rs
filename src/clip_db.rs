@@ -12,11 +12,7 @@ pub struct ClipboardEntry {
     pub clip_text: String,
 }
 
-pub fn insert_default_values(conn: &mut SqliteConnection) -> QueryResult<usize> {
-    insert_into(clipboard_entries)
-        .default_values()
-        .execute(conn)
-}
+
 
 pub fn write_to_db(connection: &mut SqliteConnection, clip_entry: &str) -> QueryResult<usize> {
     insert_into(clipboard_entries)
