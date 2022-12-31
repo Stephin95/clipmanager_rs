@@ -16,6 +16,13 @@ wl-clipboard
 
 Clicking older entries will add it to the clipboard
 
+### Clear all the stored clipboard entries
+```<path to clipmanager-rs binary> --gui```
+## Notes
+- The database for the clipboard will be created in the working directory. Use the same directory for all the arguments. Using different directory will result in error or unexpected behaviour. This behaviour will be solved in future releases
+
 ---
 
 Not Production ready. Only for educational purpose
+
+
