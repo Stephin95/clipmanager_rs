@@ -2,6 +2,7 @@ mod schema;
 use diesel::{insert_into, prelude::*};
 use clipboard_entries::dsl::*;
 use schema::clipboard_entries;
+use log::info;
 #[derive(Queryable, PartialEq, Debug)]
 
 pub struct ClipboardEntry {
@@ -27,7 +28,7 @@ pub fn retrieve_clipboard_history(connection: &mut SqliteConnection) -> Vec<Clip
 
     let results = clipboard_entries
         // .filter(published.eq(true))
-        .limit(200)
+        //.limit(200)
         .load::<ClipboardEntry>(connection)
         .expect("Error loading clipboard entries");
 
@@ -37,6 +38,6 @@ pub fn remove_duplicates(connection: &mut SqliteConnection, query: &String) {
     if let Err(_deleted) =
         diesel::delete(clipboard_entries.filter(clip_text.like(query))).execute(connection)
     {
-        println!("No duplicates found")
+        info!("No duplicates found")
     };
 }

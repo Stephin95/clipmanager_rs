@@ -1,85 +1,22 @@
 
+use std::process::Child;
+mod toast;
+use iced::Length;
 use iced::executor;
+use iced::widget::column;
 use iced::widget::scrollable;
 use iced::widget::Button;
 use iced::widget::Column;
+use iced::widget::text;
 use iced::Application;
 use iced::Theme;
 use iced::{Alignment, Command, Element, Settings};
-use std::ops::{Bound, RangeBounds};
-
 use crate::clip_db::ClipboardEntry;
+mod gui_helpers;
+use gui_helpers::{Message,format_button_text};
+use toast::{Status, Toast};
 
 
-trait StringUtils {
-    fn substring(&self, start: usize, len: usize) -> &str;
-    fn slice(&self, range: impl RangeBounds<usize>) -> &str;
-}
-
-impl StringUtils for str {
-    fn substring(&self, start: usize, len: usize) -> &str {
-        let mut char_pos = 0;
-        let mut byte_start = 0;
-        let mut it = self.chars();
-        loop {
-            if char_pos == start {
-                break;
-            }
-            if let Some(c) = it.next() {
-                char_pos += 1;
-                byte_start += c.len_utf8();
-            } else {
-                break;
-            }
-        }
-        char_pos = 0;
-        let mut byte_end = byte_start;
-        loop {
-            if char_pos == len {
-                break;
-            }
-            if let Some(c) = it.next() {
-                char_pos += 1;
-                byte_end += c.len_utf8();
-            } else {
-                break;
-            }
-        }
-        &self[byte_start..byte_end]
-    }
-    fn slice(&self, range: impl RangeBounds<usize>) -> &str {
-        let start = match range.start_bound() {
-            Bound::Included(bound) | Bound::Excluded(bound) => *bound,
-            Bound::Unbounded => 0,
-        };
-        let len = match range.end_bound() {
-            Bound::Included(bound) => *bound + 1,
-            Bound::Excluded(bound) => *bound,
-            Bound::Unbounded => self.len(),
-        } - start;
-        self.substring(start, len)
-    }
-}
-
-fn slice_button_text<'a>(clip_text: String) -> String {
-    let string_length = clip_text.len();
-    let max_slice_length=50;
-    if string_length > max_slice_length {
-        format!("{}{}",clip_text.replace("\n", " ").slice(..max_slice_length).to_owned(),"...")
-    } else {
-        clip_text.replace("\n", " ")
-    }
-}
-
-fn format_button_text(clipboard_entry: &Vec<ClipboardEntry>) -> Vec<ClipboardEntry> {
-    clipboard_entry
-        .iter()
-        .map(|clip_entry| ClipboardEntry {
-            clip_text: slice_button_text(clip_entry.clip_text.clone()),
-            id: clip_entry.id.clone(),
-        })
-        .collect()
-}
 
 pub fn show<'a>(cliphist: Vec<ClipboardEntry>) -> iced::Result {
 
@@ -105,14 +42,11 @@ pub fn show<'a>(cliphist: Vec<ClipboardEntry>) -> iced::Result {
 }
 
 struct ClipboardManager {
+    toasts:Vec<Toast>,
     cliphist: Vec<ClipboardEntry>,
     formatted_cliphist: Vec<ClipboardEntry>,
 }
 
-#[derive(Debug, Clone)]
-enum Message {
-    Entry(i32),
-}
 
 impl Application for ClipboardManager {
     type Executor = executor::Default;
@@ -124,7 +58,7 @@ impl Application for ClipboardManager {
             Self {
                 formatted_cliphist: format_button_text(&flags),
                 cliphist: flags,
-            },
+                toasts: Vec::new(),            },
             Command::none(),
         )
     }
@@ -133,16 +67,30 @@ impl Application for ClipboardManager {
         String::from("Clipboard Manager")
     }
 
-    fn update(&mut self, message: Message) -> Command<Message> {
+    fn update<'a>(&'a mut self, message: Message) -> Command<Message> {
         match message {
             Message::Entry(copied) => {
                 for clip_text in &*self.cliphist{
                     if copied==clip_text.id{
-                        set_clipboard(clip_text.clip_text.as_str());
-
+                        if let Err(err)=set_clipboard(clip_text.clip_text.as_str()){
+                           println!("{:?}",err); 
+                        self.toasts.push( Toast{
+                    title: "Error".into(),
+                    body: "Error copying the value to clipboard, Make sure wl-copy is installed".into(),
+                    status: Status::Danger,
+                });
+                        };
+                        self.toasts.push( Toast{
+                    title: "Copied to clipboard".into(),
+                    body: clip_text.clip_text.clone().into(),
+                    status: Status::Primary,
+                });
                     }
                 }
 
+            },
+            Message::ToastClose(index)=>{
+                self.toasts.remove(index);
             }
         };
         Command::none()
@@ -166,19 +114,22 @@ impl Application for ClipboardManager {
             .fold(Column::new(), |column_custom, button_ind| {
                 column_custom.push(button_ind)
             });
-        scrollable(
+        let content:Element<Message> =scrollable(
             column_custom
                 .padding(5)
                 .align_items(Alignment::Center)
                 .spacing(1),
         )
-        .into()
+        .into();
+         toast::Manager::new(content, &self.toasts, Message::ToastClose)
+            .timeout(3)
+            .into()
     }
 }
 
-fn set_clipboard(text: &str) {
+fn set_clipboard(text: &str)->Result<Child,std::io::Error> {
     std::process::Command::new("wl-copy")
         .arg(text)
         .spawn()
-        .expect("failed to copy value to clipboard please make sure wl-copy is installed");
+        
 }

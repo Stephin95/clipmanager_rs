@@ -5,7 +5,9 @@ use diesel::prelude::*;
 use diesel_migrations::MigrationHarness;
 use diesel_migrations::{embed_migrations, EmbeddedMigrations};
 use std::io::{self, Read};
+use std::string::FromUtf8Error;
 mod iced_gui;
+use log::warn;
 /// Simple program to greet a person
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -25,11 +27,12 @@ fn main() {
     pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("./migrations/");
     let args = Args::parse();
     let mut conn = clip_db::establish_connection();
-    conn.run_pending_migrations(MIGRATIONS).unwrap();
-
+    conn.run_pending_migrations(MIGRATIONS).expect("Could not run pending Migrations");
     if args.store {
         // save_copied_val(& conn)
-        save_copied_val(&mut conn,MIGRATIONS)
+        if let Err(err)=save_copied_val(&mut conn,MIGRATIONS){
+            warn!("Error converting copied value to utf8\n{:?}",err)
+        }
     } else if args.list {
         let clip_hist_iter = retrieve_clipboard_history(&mut conn);
         print_clipboard(clip_hist_iter)
@@ -46,20 +49,20 @@ fn main() {
 }
 
 fn print_clipboard(clip_hist:Vec<ClipboardEntry>){
-    println!("Displaying {} posts", clip_hist.len());
-    for retrieved_entry in clip_hist {
+    println!("Total {} entries", clip_hist.len());
+    for (index,retrieved_entry) in clip_hist.iter().enumerate() {
         // println!("{}", retrieved_entry.id);
         // println!("----------\n");
-        println!("{}", retrieved_entry.clip_text);
-        println!("----------\n");
+        println!("{}| {}",index, retrieved_entry.clip_text);
+        //println!("----------");
     }
 }
-fn save_copied_val(conn: &mut SqliteConnection,migrations:EmbeddedMigrations) {
+fn save_copied_val(conn: &mut SqliteConnection,migrations:EmbeddedMigrations) -> Result<(), FromUtf8Error>{
     let mut bytes = Vec::new();
     io::stdin()
         .read_to_end(&mut bytes)
         .expect("No arguments supplied");
-    let clipboard_entry = String::from_utf8(bytes).expect("Error converting copied value to utf8");
+    let clipboard_entry = String::from_utf8(bytes)?;
 
     remove_duplicates(conn, &clipboard_entry);
     match write_to_db(conn, &clipboard_entry) {
@@ -75,6 +78,7 @@ fn save_copied_val(conn: &mut SqliteConnection,migrations:EmbeddedMigrations) {
             };
         }
     }
+    Ok(())
 }
 
 fn show_gui(cliphist_vec: Vec<ClipboardEntry>) {

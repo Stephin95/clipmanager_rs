@@ -10,4 +10,6 @@ clap = { version = "4", features = ["derive"] }
 iced = "0.9"
 diesel = { version = "2", features = ["sqlite"] }
 diesel_migrations = { version="2", features=["sqlite"]}
+log = "0.4.17"
+iced_native = "0.10.1"
 
