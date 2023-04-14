@@ -54,7 +54,7 @@ fn print_clipboard(clip_hist:Vec<ClipboardEntry>){
         println!("----------\n");
     }
 }
-fn save_copied_val(conn: &mut SqliteConnection,MIGRATIONS:EmbeddedMigrations) {
+fn save_copied_val(conn: &mut SqliteConnection,migrations:EmbeddedMigrations) {
     let mut bytes = Vec::new();
     io::stdin()
         .read_to_end(&mut bytes)
@@ -70,7 +70,7 @@ fn save_copied_val(conn: &mut SqliteConnection,MIGRATIONS:EmbeddedMigrations) {
             println!("{:?}", error_val);
 
             if let Err(_error)=write_to_db(conn, &clipboard_entry){
-                conn.run_pending_migrations(MIGRATIONS).unwrap();
+                conn.run_pending_migrations(migrations).unwrap();
                 write_to_db(conn, &clipboard_entry).expect("Error Occured even after creating a table with default values");
             };
         }
