@@ -1,1 +1,6 @@
 /target
+/Cargo.lock
+/dbase.sqlite
+/my_notes.txt
+
+
