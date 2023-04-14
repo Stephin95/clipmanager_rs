@@ -95,7 +95,7 @@ pub fn show<'a>(cliphist: Vec<ClipboardEntry>) -> iced::Result {
         flags: cliphist,
         id: Default::default(),
         default_font: Default::default(),
-        default_text_size: 14,
+        default_text_size: 14_f32,
         text_multithreading: true,
         antialiasing: Default::default(),
         exit_on_close_request: true,
@@ -180,5 +180,5 @@ fn set_clipboard(text: &str) {
     std::process::Command::new("wl-copy")
         .arg(text)
         .spawn()
-        .expect("failed to execute process");
+        .expect("failed to copy value to clipboard please make sure wl-copy is installed");
 }
