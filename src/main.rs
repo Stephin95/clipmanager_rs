@@ -22,23 +22,29 @@ struct Args {
     clear: bool,
 }
 
+pub struct DieselDeps{
+    pub conn: SqliteConnection,
+    pub migrations:*mut EmbeddedMigrations,
+}
 
-fn main() {
     pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("./migrations/");
+fn main() {
+    // pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("./migrations/");
     let args = Args::parse();
     let mut conn = clip_db::establish_connection();
     conn.run_pending_migrations(MIGRATIONS).expect("Could not run pending Migrations");
     if args.store {
         // save_copied_val(& conn)
-        if let Err(err)=save_copied_val(&mut conn,MIGRATIONS){
-            warn!("Error converting copied value to utf8\n{:?}",err)
+        match get_stdin(){
+            Err(err)=>warn!("Error converting copied value to utf8\n{:?}",err),
+            Ok(clip_entry)=>save_copied_val(&mut conn,MIGRATIONS,clip_entry.as_str()),
         }
     } else if args.list {
         let clip_hist_iter = retrieve_clipboard_history(&mut conn);
         print_clipboard(clip_hist_iter)
     } else if args.gui {
-        let clip_hist_iter = retrieve_clipboard_history(&mut conn);
-        show_gui(clip_hist_iter)
+        // let clip_hist_iter = retrieve_clipboard_history(&mut conn);
+        iced_gui::show(conn).unwrap();
     }
     else if args.clear {
         revert_migrations(&mut conn, MIGRATIONS)
@@ -57,15 +63,18 @@ fn print_clipboard(clip_hist:Vec<ClipboardEntry>){
         //println!("----------");
     }
 }
-fn save_copied_val(conn: &mut SqliteConnection,migrations:EmbeddedMigrations) -> Result<(), FromUtf8Error>{
+fn get_stdin()->Result<String, FromUtf8Error>{
     let mut bytes = Vec::new();
     io::stdin()
         .read_to_end(&mut bytes)
         .expect("No arguments supplied");
     let clipboard_entry = String::from_utf8(bytes)?;
+    Ok(clipboard_entry)
+}
+fn save_copied_val(conn: &mut SqliteConnection,migrations:EmbeddedMigrations , clipboard_entry:&str) {
 
-    remove_duplicates(conn, &clipboard_entry);
-    match write_to_db(conn, &clipboard_entry) {
+    remove_duplicates(conn, clipboard_entry);
+    match write_to_db(conn, clipboard_entry) {
         Ok(result) => {
             println!("{:?}", result)
         }
@@ -78,12 +87,8 @@ fn save_copied_val(conn: &mut SqliteConnection,migrations:EmbeddedMigrations) ->
             };
         }
     }
-    Ok(())
 }
 
-fn show_gui(cliphist_vec: Vec<ClipboardEntry>) {
-    iced_gui::show(cliphist_vec).unwrap();
-}
 
 fn revert_migrations(conn:&mut SqliteConnection, migrations:EmbeddedMigrations){
     conn.revert_last_migration(migrations).expect("Error reverting changes to the database");

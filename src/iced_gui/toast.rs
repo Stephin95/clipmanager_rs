@@ -4,7 +4,6 @@ use iced::widget::{
 use iced::{
     Event, Length, Element, Alignment
 };
-use crate::iced_gui::gui_helpers::Message;
 
     use std::fmt;
     use std::time::{Duration, Instant};

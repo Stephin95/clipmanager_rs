@@ -60,14 +60,16 @@ fn slice_button_text<'a>(clip_text: String) -> String {
         clip_text.replace("\n", " ")
     }
 }
-
+pub fn shorten_entry(clip_entry:&ClipboardEntry)->ClipboardEntry{
+        ClipboardEntry {
+            clip_text: slice_button_text(clip_entry.clip_text.clone()),
+            id: clip_entry.id.clone(),
+        }
+}
 pub fn format_button_text(clipboard_entry: &Vec<ClipboardEntry>) -> Vec<ClipboardEntry> {
     clipboard_entry
         .iter()
-        .map(|clip_entry| ClipboardEntry {
-            clip_text: slice_button_text(clip_entry.clip_text.clone()),
-            id: clip_entry.id.clone(),
-        })
+        .map(|clip_entry| shorten_entry(clip_entry))
         .collect()
 }
 

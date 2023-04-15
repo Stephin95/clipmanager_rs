@@ -1,24 +1,27 @@
 
 use std::process::Child;
 mod toast;
-use iced::Length;
+use diesel::SqliteConnection;
 use iced::executor;
-use iced::widget::column;
 use iced::widget::scrollable;
 use iced::widget::Button;
 use iced::widget::Column;
-use iced::widget::text;
 use iced::Application;
 use iced::Theme;
 use iced::{Alignment, Command, Element, Settings};
 use crate::clip_db::ClipboardEntry;
+use crate::clip_db::retrieve_clipboard_history;
+use crate::save_copied_val;
 mod gui_helpers;
 use gui_helpers::{Message,format_button_text};
 use toast::{Status, Toast};
+use crate::MIGRATIONS;
+
+use self::gui_helpers::shorten_entry;
 
 
 
-pub fn show<'a>(cliphist: Vec<ClipboardEntry>) -> iced::Result {
+pub fn show<'a>(conn:SqliteConnection) -> iced::Result {
 
 
     ClipboardManager::run(Settings {
@@ -29,7 +32,7 @@ pub fn show<'a>(cliphist: Vec<ClipboardEntry>) -> iced::Result {
             decorations: false,
             ..Default::default()
         },
-        flags: cliphist,
+        flags: conn,
         id: Default::default(),
         default_font: Default::default(),
         default_text_size: 14_f32,
@@ -40,10 +43,10 @@ pub fn show<'a>(cliphist: Vec<ClipboardEntry>) -> iced::Result {
         // ..Default::default()
     })
 }
-
 struct ClipboardManager {
     toasts:Vec<Toast>,
     cliphist: Vec<ClipboardEntry>,
+    flags : SqliteConnection,
     formatted_cliphist: Vec<ClipboardEntry>,
 }
 
@@ -52,12 +55,15 @@ impl Application for ClipboardManager {
     type Executor = executor::Default;
     type Message = Message;
     type Theme = Theme;
-    type Flags = Vec<ClipboardEntry>;
-    fn new(flags: Vec<ClipboardEntry>) -> (Self, Command<Message>) {
+    type Flags = SqliteConnection;
+    fn new(mut flags: SqliteConnection) -> (Self, Command<Message>) {
+        let clip_hist=retrieve_clipboard_history(&mut flags);
         (
+            
             Self {
-                formatted_cliphist: format_button_text(&flags),
-                cliphist: flags,
+                formatted_cliphist: format_button_text(&clip_hist),
+                cliphist: clip_hist,
+                flags,
                 toasts: Vec::new(),            },
             Command::none(),
         )
@@ -66,13 +72,14 @@ impl Application for ClipboardManager {
     fn title(&self) -> String {
         String::from("Clipboard Manager")
     }
-
     fn update<'a>(&'a mut self, message: Message) -> Command<Message> {
         match message {
             Message::Entry(copied) => {
-                for clip_text in &*self.cliphist{
+                for clip_text in self.cliphist.clone()
+                {
                     if copied==clip_text.id{
-                        if let Err(err)=set_clipboard(clip_text.clip_text.as_str()){
+                        if let Err(err)=set_clipboard(clip_text.clip_text.as_str())
+                        {
                            println!("{:?}",err); 
                         self.toasts.push( Toast{
                     title: "Error".into(),
@@ -80,9 +87,12 @@ impl Application for ClipboardManager {
                     status: Status::Danger,
                 });
                         };
+                       save_copied_val(&mut self.flags, MIGRATIONS, clip_text.clip_text.as_str()) ;
+                        self.refresh_with_db();
+                        let toast_text=shorten_entry(&clip_text);
                         self.toasts.push( Toast{
                     title: "Copied to clipboard".into(),
-                    body: clip_text.clip_text.clone().into(),
+                    body: toast_text.clip_text.into(),
                     status: Status::Primary,
                 });
                     }
@@ -126,6 +136,17 @@ impl Application for ClipboardManager {
             .into()
     }
 }
+trait GuiMod{
+    fn refresh_with_db<'a>(&'a mut self);
+}
+impl GuiMod for ClipboardManager{
+    fn refresh_with_db<'a>(&'a mut self){
+                        self.cliphist=retrieve_clipboard_history(&mut self.flags);
+                        self.formatted_cliphist= format_button_text(&self.cliphist);
+    }
+}
+
+
 
 fn set_clipboard(text: &str)->Result<Child,std::io::Error> {
     std::process::Command::new("wl-copy")
