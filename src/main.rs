@@ -6,7 +6,7 @@ use diesel_migrations::MigrationHarness;
 use diesel_migrations::{embed_migrations, EmbeddedMigrations};
 use std::io::{self, Read};
 use std::string::FromUtf8Error;
-mod iced_gui;
+mod gui;
 use log::warn;
 /// Simple program to greet a person
 #[derive(Parser, Debug)]
@@ -44,7 +44,7 @@ fn main() {
         print_clipboard(clip_hist_iter)
     } else if args.gui {
         // let clip_hist_iter = retrieve_clipboard_history(&mut conn);
-        iced_gui::show(conn).unwrap();
+        gui::show(conn).unwrap();
     }
     else if args.clear {
         revert_migrations(&mut conn, MIGRATIONS)

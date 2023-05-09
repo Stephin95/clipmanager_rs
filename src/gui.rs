@@ -1,11 +1,14 @@
 
 use std::process::Child;
+use std::cmp;
 mod toast;
 use diesel::SqliteConnection;
 use iced::executor;
+use iced::futures::io::Window;
 use iced::widget::scrollable;
 use iced::widget::Button;
 use iced::widget::Column;
+use iced::Subscription;
 use iced::Application;
 use iced::Theme;
 use iced::{Alignment, Command, Element, Settings};
@@ -17,6 +20,7 @@ use gui_helpers::{Message,format_button_text};
 use toast::{Status, Toast};
 use crate::MIGRATIONS;
 
+use self::gui_helpers::create_button_text;
 use self::gui_helpers::shorten_entry;
 
 
@@ -29,13 +33,13 @@ pub fn show<'a>(conn:SqliteConnection) -> iced::Result {
             size: (300, 500),
             transparent: true,
             always_on_top: true,
-            decorations: false,
+            decorations: true,
             ..Default::default()
         },
         flags: conn,
-        id: Default::default(),
+        id: Some(String::from("ClipManagerRS")),
         default_font: Default::default(),
-        default_text_size: 14_f32,
+        default_text_size: 18_f32,
         text_multithreading: true,
         antialiasing: Default::default(),
         exit_on_close_request: true,
@@ -47,6 +51,7 @@ struct ClipboardManager {
     toasts:Vec<Toast>,
     cliphist: Vec<ClipboardEntry>,
     flags : SqliteConnection,
+    win_width:usize,
     formatted_cliphist: Vec<ClipboardEntry>,
 }
 
@@ -61,10 +66,12 @@ impl Application for ClipboardManager {
         (
             
             Self {
-                formatted_cliphist: format_button_text(&clip_hist),
+                formatted_cliphist:create_button_text(&clip_hist),
                 cliphist: clip_hist,
                 flags,
-                toasts: Vec::new(),            },
+                toasts: Vec::new(),
+                win_width:1024_usize,
+                        },
             Command::none(),
         )
     }
@@ -75,7 +82,7 @@ impl Application for ClipboardManager {
     fn update<'a>(&'a mut self, message: Message) -> Command<Message> {
         match message {
             Message::Entry(copied) => {
-                for clip_text in self.cliphist.clone()
+                for clip_text in self.cliphist.iter()
                 {
                     if copied==clip_text.id{
                         if let Err(err)=set_clipboard(clip_text.clip_text.as_str())
@@ -88,7 +95,6 @@ impl Application for ClipboardManager {
                 });
                         };
                        save_copied_val(&mut self.flags, MIGRATIONS, clip_text.clip_text.as_str()) ;
-                        self.refresh_with_db();
                         let toast_text=shorten_entry(&clip_text);
                         self.toasts.push( Toast{
                     title: "Copied to clipboard".into(),
@@ -97,26 +103,40 @@ impl Application for ClipboardManager {
                 });
                     }
                 }
+                        self.refresh_with_db();
 
             },
             Message::ToastClose(index)=>{
                 self.toasts.remove(index);
             }
+            Message::EventOccurred(event)=>{
+              if let iced::Event::Window(iced::window::Event::Resized { width, height }) = event {
+                    self.win_width=width.try_into().unwrap();
+                }
+
+        } ,
+
         };
         Command::none()
     }
 
-    fn view<'a>(&self) -> Element<Message> {
+    fn view<'a>(& self) -> Element<Message> {
         // let cliphist_display = Vec::new();
 
         let buttons = self
             .formatted_cliphist
+            // .cliphist
             .iter()
             // .rev()
             .map(|clip_entry| {
-                Button::new(clip_entry.clip_text.as_str())
+                // let button_text=shorten_entry(clip_entry).clip_text.as_str();
+                let max_entry=self.win_width/7;
+                let entry_length=clip_entry.clip_text.len();
+                // let button_text=clip_entry.clip_text.replace("\n", "\\n");
+                
+                Button::new(&clip_entry.clip_text[0..cmp::min(max_entry,entry_length-1)])
                     .on_press(Message::Entry(clip_entry.id.clone()))
-                    .width(iced::Length::Fill)
+                    .width(iced::Length::Fill).padding(10_f32)
             })
             .collect::<Vec<iced::widget::Button<Message>>>();
         let column_custom = buttons
@@ -135,6 +155,9 @@ impl Application for ClipboardManager {
             .timeout(3)
             .into()
     }
+     fn subscription(&self) -> Subscription<Message> {
+        iced_native::subscription::events().map(Message::EventOccurred)
+    }
 }
 trait GuiMod{
     fn refresh_with_db<'a>(&'a mut self);
@@ -142,7 +165,8 @@ trait GuiMod{
 impl GuiMod for ClipboardManager{
     fn refresh_with_db<'a>(&'a mut self){
                         self.cliphist=retrieve_clipboard_history(&mut self.flags);
-                        self.formatted_cliphist= format_button_text(&self.cliphist);
+                        self.formatted_cliphist=create_button_text(&self.cliphist)
+                        // self.formatted_cliphist= format_button_text(&self.cliphist);
     }
 }
 
