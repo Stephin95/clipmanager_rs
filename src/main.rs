@@ -1,3 +1,5 @@
+
+#![feature(round_char_boundary)]
 mod clip_db;
 use clap::Parser;
 use clip_db::*;
@@ -7,9 +9,10 @@ use diesel_migrations::{embed_migrations, EmbeddedMigrations};
 use std::io::{self, Read};
 use std::string::FromUtf8Error;
 mod gui;
-use log::warn;
+use log::{warn,info};
 /// Simple program to greet a person
 #[derive(Parser, Debug)]
+
 #[command(author, version, about, long_about = None)]
 struct Args {
     #[arg(short, long)]
@@ -26,9 +29,10 @@ pub struct DieselDeps{
     pub conn: SqliteConnection,
     pub migrations:*mut EmbeddedMigrations,
 }
-
     pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("./migrations/");
 fn main() {
+    
+    env_logger::init();
     // pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("./migrations/");
     let args = Args::parse();
     let mut conn = clip_db::establish_connection();
@@ -37,7 +41,7 @@ fn main() {
         // save_copied_val(& conn)
         match get_stdin(){
             Err(err)=>warn!("Error converting copied value to utf8\n{:?}",err),
-            Ok(clip_entry)=>save_copied_val(&mut conn,MIGRATIONS,clip_entry.as_str()),
+            Ok(clip_entry)=>save_copied_utf8(&mut conn,MIGRATIONS,clip_entry.as_str()),
         }
     } else if args.list {
         let clip_hist_iter = retrieve_clipboard_history(&mut conn);
@@ -71,19 +75,19 @@ fn get_stdin()->Result<String, FromUtf8Error>{
     let clipboard_entry = String::from_utf8(bytes)?;
     Ok(clipboard_entry)
 }
-fn save_copied_val(conn: &mut SqliteConnection,migrations:EmbeddedMigrations , clipboard_entry:&str) {
+fn save_copied_utf8(conn: &mut SqliteConnection,migrations:EmbeddedMigrations , clipboard_entry:&str) {
 
     remove_duplicates(conn, clipboard_entry);
-    match write_to_db(conn, clipboard_entry) {
+    match write_utf8_to_db(conn, clipboard_entry) {
         Ok(result) => {
-            println!("{:?}", result)
+            info!("Written {:?} entries", result)
         }
         Err(error_val) => {
-            println!("{:?}", error_val);
+            info!("Error converting to utf8{:?}", error_val);
 
-            if let Err(_error)=write_to_db(conn, &clipboard_entry){
+            if let Err(_error)=write_utf8_to_db(conn, &clipboard_entry){
                 conn.run_pending_migrations(migrations).unwrap();
-                write_to_db(conn, &clipboard_entry).expect("Error Occured even after creating a table with default values");
+                write_utf8_to_db(conn, &clipboard_entry).expect("Error Occured even after creating a table with default values");
             };
         }
     }

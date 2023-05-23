@@ -4,20 +4,27 @@ use clipboard_entries::dsl::*;
 use schema::clipboard_entries;
 use log::info;
 #[derive(Queryable, PartialEq, Debug,Clone)]
-
 pub struct ClipboardEntry {
     pub id: i32,
     pub clip_text: String,
+     pub clip_bin:Vec<u8>
 }
 
-
-
-pub fn write_to_db(connection: &mut SqliteConnection, clip_entry: &str) -> QueryResult<usize> {
+pub fn write_utf8_to_db(connection: &mut SqliteConnection, clip_entry: &str) -> QueryResult<usize> {
+//     let new_users = vec![
+//     (id.eq(2), name.eq("Tess")),
+//     (id.eq(3), name.eq("Jim")),
+// ];
     insert_into(clipboard_entries)
-        .values(clip_text.eq(clip_entry))
+        .values((clip_text.eq(clip_entry),clip_bin.eq(Vec::new())))
         .execute(connection)
 }
 
+pub fn write_bin_to_db(connection: &mut SqliteConnection, clip_entry: &[u8]) -> QueryResult<usize> {
+    insert_into(clipboard_entries)
+        .values(clip_bin.eq(clip_entry.to_vec()))
+        .execute(connection)
+}
 pub fn establish_connection() -> SqliteConnection {
     let database_url = "./dbase.sqlite";
     SqliteConnection::establish(&database_url)

@@ -64,6 +64,7 @@ pub fn shorten_entry(clip_entry:&ClipboardEntry)->ClipboardEntry{
         ClipboardEntry {
             clip_text: slice_button_text(clip_entry.clip_text.clone()),
             id: clip_entry.id.clone(),
+            clip_bin:clip_entry.clip_bin.clone()
         }
 }
 pub fn format_button_text(clipboard_entry: &Vec<ClipboardEntry>) -> Vec<ClipboardEntry> {

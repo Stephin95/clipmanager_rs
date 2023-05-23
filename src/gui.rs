@@ -4,7 +4,7 @@ use std::cmp;
 mod toast;
 use diesel::SqliteConnection;
 use iced::executor;
-use iced::futures::io::Window;
+
 use iced::widget::scrollable;
 use iced::widget::Button;
 use iced::widget::Column;
@@ -14,9 +14,9 @@ use iced::Theme;
 use iced::{Alignment, Command, Element, Settings};
 use crate::clip_db::ClipboardEntry;
 use crate::clip_db::retrieve_clipboard_history;
-use crate::save_copied_val;
+use crate::save_copied_utf8;
 mod gui_helpers;
-use gui_helpers::{Message,format_button_text};
+use gui_helpers::{Message};
 use toast::{Status, Toast};
 use crate::MIGRATIONS;
 
@@ -30,7 +30,7 @@ pub fn show<'a>(conn:SqliteConnection) -> iced::Result {
 
     ClipboardManager::run(Settings {
         window: iced::window::Settings {
-            size: (300, 500),
+            size: (400, 500),
             transparent: true,
             always_on_top: true,
             decorations: true,
@@ -94,7 +94,7 @@ impl Application for ClipboardManager {
                     status: Status::Danger,
                 });
                         };
-                       save_copied_val(&mut self.flags, MIGRATIONS, clip_text.clip_text.as_str()) ;
+                       save_copied_utf8(&mut self.flags, MIGRATIONS, clip_text.clip_text.as_str()) ;
                         let toast_text=shorten_entry(&clip_text);
                         self.toasts.push( Toast{
                     title: "Copied to clipboard".into(),
@@ -110,7 +110,7 @@ impl Application for ClipboardManager {
                 self.toasts.remove(index);
             }
             Message::EventOccurred(event)=>{
-              if let iced::Event::Window(iced::window::Event::Resized { width, height }) = event {
+              if let iced::Event::Window(iced::window::Event::Resized { width, height: _ }) = event {
                     self.win_width=width.try_into().unwrap();
                 }
 
@@ -133,8 +133,9 @@ impl Application for ClipboardManager {
                 let max_entry=self.win_width/7;
                 let entry_length=clip_entry.clip_text.len();
                 // let button_text=clip_entry.clip_text.replace("\n", "\\n");
-                
-                Button::new(&clip_entry.clip_text[0..cmp::min(max_entry,entry_length-1)])
+                println!("{}",&clip_entry.clip_text);
+                let char_boundary=&clip_entry.clip_text.floor_char_boundary(cmp::min(max_entry,entry_length-1));
+                Button::new(&clip_entry.clip_text[..*char_boundary])
                     .on_press(Message::Entry(clip_entry.id.clone()))
                     .width(iced::Length::Fill).padding(10_f32)
             })
