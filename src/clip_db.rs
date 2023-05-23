@@ -20,11 +20,7 @@ pub fn write_utf8_to_db(connection: &mut SqliteConnection, clip_entry: &str) -> 
         .execute(connection)
 }
 
-pub fn write_bin_to_db(connection: &mut SqliteConnection, clip_entry: &[u8]) -> QueryResult<usize> {
-    insert_into(clipboard_entries)
-        .values(clip_bin.eq(clip_entry.to_vec()))
-        .execute(connection)
-}
+
 pub fn establish_connection() -> SqliteConnection {
     let database_url = "./dbase.sqlite";
     SqliteConnection::establish(&database_url)

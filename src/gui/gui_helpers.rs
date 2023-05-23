@@ -67,12 +67,12 @@ pub fn shorten_entry(clip_entry:&ClipboardEntry)->ClipboardEntry{
             clip_bin:clip_entry.clip_bin.clone()
         }
 }
-pub fn format_button_text(clipboard_entry: &Vec<ClipboardEntry>) -> Vec<ClipboardEntry> {
-    clipboard_entry
-        .iter()
-        .map(|clip_entry| shorten_entry(clip_entry))
-        .collect()
-}
+// pub fn format_button_text(clipboard_entry: &Vec<ClipboardEntry>) -> Vec<ClipboardEntry> {
+//     clipboard_entry
+//         .iter()
+//         .map(|clip_entry| shorten_entry(clip_entry))
+//         .collect()
+// }
 
 pub fn create_button_text(clipboard_entry: &Vec<ClipboardEntry>) -> Vec<ClipboardEntry> {
     clipboard_entry
