@@ -9,7 +9,7 @@ use diesel_migrations::{embed_migrations, EmbeddedMigrations};
 use std::io::{self, Read};
 use std::string::FromUtf8Error;
 mod gui;
-use log::{warn,info};
+use log::{warn,info, error};
 /// Simple program to greet a person
 #[derive(Parser, Debug)]
 
@@ -54,7 +54,7 @@ fn main() {
         revert_migrations(&mut conn, MIGRATIONS)
     }
     else {
-        println!("Invalid Arguments Supplied")
+        error!("Invalid Arguments Supplied")
     }
 }
 

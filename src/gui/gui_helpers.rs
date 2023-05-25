@@ -74,11 +74,11 @@ pub fn shorten_entry(clip_entry:&ClipboardEntry)->ClipboardEntry{
 //         .collect()
 // }
 
-pub fn create_button_text(clipboard_entry: &Vec<ClipboardEntry>) -> Vec<ClipboardEntry> {
-    clipboard_entry
-        .iter().rev()
-        .map(|clip_entry| {let mut button_clip_entry=clip_entry.clone();button_clip_entry.clip_text=button_clip_entry.clip_text.replace("\n", "\\n");button_clip_entry})
-        .collect()}
+// pub fn create_button_text(clipboard_entry: &Vec<ClipboardEntry>) -> Vec<ClipboardEntry> {
+//     clipboard_entry
+//         .iter().rev()
+//         .map(|clip_entry| {let mut button_clip_entry=clip_entry.clone();button_clip_entry.clip_text=button_clip_entry.clip_text.replace("\n", "\\n");button_clip_entry})
+//         .collect()}
 #[derive(Debug, Clone)]
 pub enum Message {
     Entry(i32),
