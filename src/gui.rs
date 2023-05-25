@@ -1,9 +1,9 @@
 
 use std::process::Child;
-use std::cmp;
+// use std::cmp;
 mod toast;
 use diesel::SqliteConnection;
-use diesel::helper_types::max;
+// use diesel::helper_types::max;
 use iced::executor;
 
 use iced::widget::scrollable;
