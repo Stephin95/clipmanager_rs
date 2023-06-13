@@ -54,6 +54,7 @@ struct ClipboardManager {
     cliphist: Vec<ClipboardEntry>,
     flags : SqliteConnection,
     win_width:usize,
+
     // formatted_cliphist: Vec<ClipboardEntry>,
 }
 
@@ -130,15 +131,12 @@ impl Application for ClipboardManager {
             // .formatted_cliphist
             .cliphist
             .iter()
-            // .rev()
+            .rev()
             .map(|clip_entry| {
-                // let button_text=shorten_entry(clip_entry).clip_text.as_str();
-                // let entry_length=clip_entry.clip_text.len();
-                // let button_text=clip_entry.clip_text.replace("\n", "\\n");
-                // println!("{}",&clip_entry.clip_text);
                 let req_len=find_button_text_display_len(&clip_entry.clip_text, max_entry);
                 // let char_boundary=&clip_entry.clip_text.floor_char_boundary(cmp::min(max_entry,entry_length));
                 let char_boundary=&clip_entry.clip_text.floor_char_boundary(req_len);
+                if char_boundary<&clip_entry.clip_text.len(){};
                 Button::new(&clip_entry.clip_text[..*char_boundary])
                     .on_press(Message::Entry(clip_entry.id.clone()))
                     .width(iced::Length::Fill).padding(10_f32)
@@ -187,6 +185,7 @@ fn set_clipboard(text: &str)->Result<Child,std::io::Error> {
 fn find_button_text_display_len(entry_text:&String,max_len:usize)->usize{
     let mut needed_len=0_usize;
     let chunks=entry_text.split("\n");
+    let mut iteration=1;
     for  chunk in chunks{
         let chunk_len=chunk.len();
         if chunk_len>max_len{
@@ -195,6 +194,10 @@ fn find_button_text_display_len(entry_text:&String,max_len:usize)->usize{
         else{
             needed_len=needed_len +chunk_len;
         }
+    iteration+=1;
+    if iteration>2{
+        break
+    }
     };
     return needed_len;
 

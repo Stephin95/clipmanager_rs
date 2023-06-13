@@ -13,4 +13,5 @@ diesel_migrations = { version="2", features=["sqlite"]}
 log = "0.4"
 iced_native = "0.10"
 env_logger = "0.10.0"
+home = "0.5.5"
 

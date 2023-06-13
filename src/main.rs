@@ -7,9 +7,11 @@ use diesel::prelude::*;
 use diesel_migrations::MigrationHarness;
 use diesel_migrations::{embed_migrations, EmbeddedMigrations};
 use std::io::{self, Read};
+use std::path::Path;
 use std::string::FromUtf8Error;
 mod gui;
 use log::{warn,info, error};
+use home::home_dir;
 /// Simple program to greet a person
 #[derive(Parser, Debug)]
 
@@ -35,7 +37,18 @@ fn main() {
     env_logger::init();
     // pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("./migrations/");
     let args = Args::parse();
-    let mut conn = clip_db::establish_connection();
+    let mut home_folder=home_dir().expect("Unable to find Home directory");
+    home_folder.push(".config/clipmanager_rs");
+    let config_folder_buf=home_folder.clone(); 
+    let config_folder=config_folder_buf.as_path();
+    home_folder.push("dbase.sqlite");   
+    let db_file=home_folder.as_path();
+    use std::fs;
+    if let Ok(())=fs::create_dir_all(config_folder){
+eprintln!("Folder Created for db");
+    };
+    // let database_url = "~/.config/clipmanager_rs/dbase.sqlite";
+    let mut conn = clip_db::establish_connection(&db_file.to_str().unwrap());
     conn.run_pending_migrations(MIGRATIONS).expect("Could not run pending Migrations");
     if args.store {
         // save_copied_val(& conn)
