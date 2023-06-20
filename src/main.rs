@@ -7,7 +7,6 @@ use diesel::prelude::*;
 use diesel_migrations::MigrationHarness;
 use diesel_migrations::{embed_migrations, EmbeddedMigrations};
 use std::io::{self, Read};
-use std::path::Path;
 use std::string::FromUtf8Error;
 mod gui;
 use log::{warn,info, error};
