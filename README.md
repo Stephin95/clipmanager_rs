@@ -23,7 +23,7 @@ Clicking older entries will add it to the clipboard
 
 ## My sway Config
 
-``` exec --no-startup-id wl-paste -t text --watch /mnt/Data/Rust/clipmanager_rs/target/release/clipmanager_rs -s  ```
+``` exec --no-startup-id wl-paste -t text --watch <path to clipmanager_rs> -s  ```
 
 ---
 
